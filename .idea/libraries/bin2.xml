@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="bin">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/VolleyLibrary/bin/volley.jar!/" />
+      <root url="jar://$PROJECT_DIR$/VolleyLibrary/bin/volleylibrary.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
