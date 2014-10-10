@@ -1,15 +1,15 @@
-/*
- * Created by Storm Zhang, Feb 11, 2014.
- */
-
-package com.syuanbin.exercise.application;
+package com.syuanbin.exercise.Application;
 
 import android.app.Application;
 
 import com.syuanbin.exercise.data.RequestManager;
 
-public class VolleyApp extends Application {
-	@Override
+
+/**
+ * Created by Administrator on 2014/10/10.
+ */
+public class MyApp extends Application{
+    @Override
     public void onCreate() {
         super.onCreate();
         init();
@@ -19,4 +19,5 @@ public class VolleyApp extends Application {
     private void init() {
         RequestManager.init(this);
     }
+
 }
