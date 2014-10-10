@@ -24,3 +24,8 @@ proguard/
 
 # Log Files
 *.log
+
+.idea/libraries/gson_2_2_4__2_.xml
+.idea/libraries/gson_2_2_4.xml
+.idea/workspace.xml
+.idea/workspace.xml
