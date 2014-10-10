@@ -13,6 +13,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="VolleyLibrary" />
+    <orderEntry type="module" module-name="XutilsLibrary" />
   </component>
 </module>
 
