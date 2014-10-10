@@ -15,6 +15,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="VolleyLibrary" />
     <orderEntry type="module" module-name="XutilsLibrary" />
+    <orderEntry type="library" name="gson-2.2.4 (2)" level="project" />
   </component>
 </module>
 
