@@ -1,0 +1,167 @@
+package com.panasonic.smart.laundry.common.view;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.AnimationDrawable;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
+import android.util.AttributeSet;
+import android.widget.ImageView;
+
+import com.panasonic.smart.laundry.R;
+import com.panasonic.smart.laundry.network.networkutil.NetworkUtil;
+import com.panasonic.smart.laundry.util.DebugLog;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+/**
+ * ダウンロードイメージ.
+ *
+ * <p>Webから取得した画像を表示するImageViewです。
+ *
+ * @author Satoshi Itoh（Sky）
+ * @version 1.0
+ */
+public class DownloadImageView extends ImageView implements LoaderManager.LoaderCallbacks<DownloadImageView.ImageLoader.BitmapWithUrl> {
+    /**
+     * ログ用のタグ.
+     */
+    private static final String LOG_TAG = DownloadImageView.class.getSimpleName();
+
+    private String imageUrl = null;
+    private String lastUpdateDate;
+
+    public DownloadImageView(Context context) {
+        super(context);
+    }
+
+    public DownloadImageView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    public DownloadImageView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+    }
+
+    /**
+     * キャッシュから画像データを呼び出します.
+     *
+     * @param imageUrl イメージURL
+     * @param lastUpdateDate 最終更新日
+     * @return 画像がキャッシュにあればtrue、なければfalseを返却する
+     */
+    public boolean setImageUrl(@NonNull String imageUrl, @NonNull String lastUpdateDate) {
+        this.imageUrl = imageUrl;
+        this.lastUpdateDate = lastUpdateDate;
+
+        Bitmap bitmap = null;
+        //TODO: URLと最終更新日から画像を検索しあればセットする
+        // bitmap = Database.getImage(getContext(), this.imageUrl, this.lastUpdateDate);
+        if (bitmap != null) {
+            setImageBitmap(bitmap);
+            return true;
+        } else {
+            // ローディング画像をセットしfalseを返却する
+            setImageResource(R.drawable.progress_circle);
+            AnimationDrawable frameAnimation = (AnimationDrawable) getBackground();
+            frameAnimation.start();
+            return false;
+        }
+    }
+
+    /**
+     * Web上から画像取得.
+     *
+     * <p>必ず先にsetImageUrlを実行すること</p>
+     * @param loaderManager ローダーマネージャー(v4)
+     * @param loaderId      ローダーID
+     */
+    public void connect(LoaderManager loaderManager, int loaderId) {
+        Bundle args = new Bundle();
+        args.putString("URL", imageUrl);
+        loaderManager.initLoader(loaderId, args, this);
+    }
+
+    @Override
+    public Loader<ImageLoader.BitmapWithUrl> onCreateLoader(int id, Bundle args) {
+        DebugLog.d(LOG_TAG, "onCreateLoader START");
+        String url = args.getString("URL");
+
+        ImageLoader loader = new ImageLoader(getContext(), url);
+        loader.forceLoad();
+        DebugLog.d(LOG_TAG, "onCreateLoader END");
+        return loader;
+    }
+
+    @Override
+    public void onLoadFinished(Loader<ImageLoader.BitmapWithUrl> loader, ImageLoader.BitmapWithUrl data) {
+        if (data != null && data.bitmap != null) {
+            this.setImageBitmap(data.bitmap);
+
+            // TODO: DBへの保存処理
+            // Database.saveImage(getContext(), data.url, this.lastUpdateDate, data.bitmap);
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<ImageLoader.BitmapWithUrl> loader) {
+
+    }
+
+    class ImageLoader extends AsyncTaskLoader<ImageLoader.BitmapWithUrl> {
+
+        private final String url;
+
+        ImageLoader(Context context, String url) {
+            super(context);
+            this.url = url;
+        }
+
+        @Override
+        public BitmapWithUrl loadInBackground() {
+            HttpURLConnection connection = null;
+            InputStream inputStream = null;
+            BitmapWithUrl bitmapWithUrl = new BitmapWithUrl();
+            bitmapWithUrl.url = url;
+            try {
+                connection = (HttpURLConnection) new URL(bitmapWithUrl.url).openConnection();
+                connection.setRequestMethod(NetworkUtil.GET);
+                inputStream = connection.getInputStream();
+
+                // Bitmap作成
+                bitmapWithUrl.bitmap = BitmapFactory.decodeStream(inputStream);
+            } catch (IOException exception) {
+                DebugLog.e(LOG_TAG, exception);
+            } finally {
+                // コネクション切断
+                if (connection != null) {
+                    connection.disconnect();
+                }
+                try {
+                    // インプットストリーム切断
+                    if (inputStream != null) {
+                        inputStream.close();
+                    }
+                } catch (IOException exception) {
+                    DebugLog.e(LOG_TAG, exception);
+                }
+            }
+            return bitmapWithUrl;
+        }
+
+        /**
+         * ローダー返却用クラス.
+         */
+        class BitmapWithUrl {
+            Bitmap bitmap;
+            String url;
+        }
+    }
+}
