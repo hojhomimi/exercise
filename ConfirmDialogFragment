@@ -1,9 +1,10 @@
 package com.panasonic.smart.eolia.common.view.dialog;
 
-
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -16,6 +17,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.panasonic.smart.eolia.R;
+
+import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 
 
 public class ConfirmDialogFragment extends DialogFragment {
@@ -39,11 +42,36 @@ public class ConfirmDialogFragment extends DialogFragment {
         void onBack(boolean isDismiss);
     }
 
+    public static ConfirmDialogFragment newInstanceSingleButton(String confirmText, String titleContent, OnConfirmListener listener) {
+        Bundle bundle = new Bundle();
+        bundle.putString(ConfirmDialogFragment.KEY_TYPE, ConfirmDialogFragment.TYPE_SINGLE);
+        bundle.putString(ConfirmDialogFragment.KEY_OK_STRING, confirmText);
+        bundle.putString(ConfirmDialogFragment.KEY_CONTENT_STRING, titleContent);
+        ConfirmDialogFragment confirmDialogFragment = new ConfirmDialogFragment();
+        confirmDialogFragment.setArguments(bundle);
+        confirmDialogFragment.setOnDialogConfirmListener(listener);
+        return confirmDialogFragment;
+
+    }
+
+    public static ConfirmDialogFragment newInstanceDoubleButton(String confirmText, String cancelString, String titleContent, OnConfirmListener listener) {
+        Bundle bundle = new Bundle();
+        bundle.putString(ConfirmDialogFragment.KEY_TYPE, ConfirmDialogFragment.TYPE_DOUBLE);
+        bundle.putString(ConfirmDialogFragment.KEY_OK_STRING, confirmText);
+        bundle.putString(ConfirmDialogFragment.KEY_CANCEL_STRING, cancelString);
+        bundle.putString(ConfirmDialogFragment.KEY_CONTENT_STRING, titleContent);
+        ConfirmDialogFragment confirmDialogFragment = new ConfirmDialogFragment();
+        confirmDialogFragment.setArguments(bundle);
+        confirmDialogFragment.setOnDialogConfirmListener(listener);
+        return confirmDialogFragment;
+
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         getDialog().requestWindowFeature(Window.FEATURE_NO_TITLE);
         getDialog().setCanceledOnTouchOutside(false);
-        getDialog().getWindow().setBackgroundDrawableResource(R.drawable.dialog_network_bg);
+        getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         if (view == null) {
             view = inflater.inflate(R.layout.dialog_confirm, container, false);
         }
@@ -77,8 +105,11 @@ public class ConfirmDialogFragment extends DialogFragment {
         btCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                confirmListener.onBack(false);
+                if (confirmListener != null) {
+                    confirmListener.onBack(false);
+
                 dismiss();
+                }
             }
         });
         btOKSingle.setOnClickListener(new View.OnClickListener() {
@@ -128,14 +159,17 @@ public class ConfirmDialogFragment extends DialogFragment {
         super.onStart();
         Window window = getDialog().getWindow();
         WindowManager.LayoutParams windowParams = window.getAttributes();
-        windowParams.dimAmount = 0.0f;
+        windowParams.dimAmount = 0.5f;
+        windowParams.type =TYPE_TOAST;
         window.setAttributes(windowParams);
     }
 
     @Override
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);
-        confirmListener.onBack(true);
+        if (confirmListener != null) {
+            confirmListener.onBack(true);
+        }
     }
 
     /**
