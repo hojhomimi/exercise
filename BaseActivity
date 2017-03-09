@@ -1,0 +1,377 @@
+package com.panasonic.smart.eolia.activity;
+
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.annotation.LayoutRes;
+import android.support.annotation.StyleRes;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.TextViewCompat;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
+import android.widget.TextView;
+
+import com.panasonic.smart.eolia.R;
+import com.panasonic.smart.eolia.common.log.DebugLog;
+import com.panasonic.smart.eolia.common.util.Util;
+import com.panasonic.smart.eolia.common.util.asynctask.ProgressbarHandler;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 基底アクティビティ.
+ *
+ * <p>基底 Activity クラスです。
+ *
+ * @author Satoshi Itoh（Sky）
+ * @version 1.0
+ */
+public abstract class BaseActivity extends AppCompatActivity {
+    /**
+     * ログ用のタグ.
+     */
+    private static final String LOG_TAG = BaseActivity.class.getSimpleName();
+
+    public Toolbar toolBar;
+    private TextView tvTitle = null;
+
+    /**
+     * ツールバー上のバックボタン.
+     */
+    protected View backButton;
+
+
+    /**
+     * メインスレッド用ハンドラ.
+     */
+    Handler mainHandler = null;
+
+    /**
+     * Broadcast Receiver を管理するためのリスト.
+     */
+    protected List<BroadcastReceiver> receivers = new ArrayList<>();
+
+    /**
+     * 処理中ダイアログ.
+     */
+//    public PanaDialog progressDialog;
+
+    /**
+     * プログレスバーを制御するハンドラー.
+     */
+    protected ProgressbarHandler progresHandler;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        DebugLog.d(LOG_TAG, "onCreate START");
+        super.onCreate(savedInstanceState);
+
+        if (getBaseLayoutId() != 0) {
+            setContentView(getBaseLayoutId());
+        }
+        setCustomActionBar();
+        mainHandler = new Handler();
+        EoliaApplication.Instance().push(this);
+
+        // 処理中ダイアログの設定
+//
+//        progressDialog = new PanaDialog(this);
+//        progressDialog.setBottomLayoutResources(this, R.layout.dialog_progress);
+//
+        progresHandler = new ProgressbarHandler(this);
+        DebugLog.d(LOG_TAG, "onCreate END");
+    }
+
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (tvTitle != null) {
+            outState.putString("toolbarTitle", tvTitle.getText().toString());
+        }
+        if (backButton != null) {
+            outState.putBoolean("backButtonVisibility", backButton.getVisibility() == View.VISIBLE);
+        }
+        if (toolBar != null) {
+            outState.putBoolean("toolBarVisibility", toolBar.getVisibility() == View.VISIBLE);
+        }
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (tvTitle != null) {
+            tvTitle.setText(savedInstanceState.getString("toolbarTitle"));
+        }
+        setBackButtonVisible(savedInstanceState.getBoolean("backButtonVisibility"));
+        if (toolBar != null) {
+            if (savedInstanceState.getBoolean("toolBarVisibility")) {
+                toolBar.setVisibility(View.VISIBLE);
+            } else {
+                toolBar.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    /**
+     * Activityのレイアウトを指定.
+     * <p>
+     * <p> ActivityのベースになるレイアウトリソースIDを指定
+     * 必要に応じて@Overrideして使用
+     *
+     * @return ActivityのレイアウトID
+     */
+    protected abstract int getBaseLayoutId();
+
+    /**
+     * ToolBarのコンテナを指定
+     * <p>
+     * <p> ToolBarのベースになるViewIDを指定
+     * BaseLayoutIdを変更する場合は@Overrideして使用
+     *
+     * @return ツールバーコンテナのViewID.
+     */
+    protected int getToolBarId() {
+        return R.id.toolbar;
+    }
+
+
+    /**
+     * カスタムツールバーのレイアウトIDを指定.
+     *
+     * @return カスタムツールバーのレイアウトリソースID
+     */
+    public int getCustomActionBarLayout() {
+        return 0;
+    }
+
+    /**
+     * カスタムツールバーのレイアウト作成.
+     *
+     * @param view ツールバー
+     */
+    public void onCreateCustomActionBarLayout(View view) {
+    }
+
+    /**
+     * getCustomActionBarLayoutの戻り値をレイアウトとしてカスタムアクションバーを設定します.
+     */
+    protected void setCustomActionBar() {
+        setCustomActionBar(getCustomActionBarLayout());
+    }
+
+    /**
+     * カスタムアクションバーの設定.
+     * <p>
+     * <p>指定されたLayoutをカスタムアクションバーとして設定します。
+     *
+     * @param layoutId ツールバーとして使用するレイアウト
+     */
+    protected void setCustomActionBar(@LayoutRes int layoutId) {
+        DebugLog.d(LOG_TAG, "setCustomActionBar START");
+        toolBar = (Toolbar) findViewById(getToolBarId());
+        if (toolBar != null) {
+            toolBar.removeAllViews();
+            setSupportActionBar(toolBar);
+
+            ActionBar ab = getSupportActionBar();
+            if (ab != null) {
+                ab.setDisplayShowCustomEnabled(false);
+                if (layoutId != 0) {
+                    ab.setDisplayShowCustomEnabled(true);
+                    View actionBarLayout = View.inflate(this, layoutId, null);
+                    final ActionBar.LayoutParams params = new ActionBar.LayoutParams(
+                            ActionBar.LayoutParams.MATCH_PARENT, ActionBar.LayoutParams.WRAP_CONTENT);
+                    backButton = actionBarLayout.findViewById(R.id.btnBack);
+                    if (backButton != null) {
+                        backButton.setOnClickListener(
+                                new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        onBackButton();
+                                    }
+                                });
+                    }
+                    tvTitle = (TextView) actionBarLayout.findViewById(R.id.tvTitle);
+                    if (tvTitle != null) {
+                        setToolBarTitle(getTitle().toString());
+                    }
+
+                    toolBar.setContentInsetsAbsolute(0, 0);
+
+                    ab.setCustomView(actionBarLayout, params);
+                    onCreateCustomActionBarLayout(actionBarLayout);
+                }
+            }
+        }
+        DebugLog.d(LOG_TAG, "setCustomActionBar END");
+    }
+
+    /**
+     * タイトル設定.
+     * <p>
+     * <p>ツールバーのタイトルを設定します.
+     *
+     * @param title タイトル文字列
+     */
+    protected void setToolBarTitle(String title) {
+        if (tvTitle != null && title != null) {
+            tvTitle.setText(title);
+        }
+    }
+
+    /**
+     * タイトルの文字サイズを設定します。.
+     * <p>
+     * <p>アクティビティ単位でタイトルの文字サイズを設定します。
+     *
+     * @param resId 設定する文字サイズ
+     */
+    protected void setToolBarTitleTextSize(@StyleRes int resId) {
+        TextViewCompat.setTextAppearance(tvTitle, resId);
+        tvTitle.setTextColor(ContextCompat.getColor(this, R.color.colorText));
+    }
+
+    /**
+     * 戻るボタンの表示・非表示を切り替えます。.
+     *
+     * @param enabled 戻るボタンの表示 true:表示　false:非表示
+     */
+    protected void setBackButtonVisible(boolean enabled) {
+        if (backButton != null) {
+            if (enabled) {
+                backButton.setVisibility(View.VISIBLE);
+            } else {
+                backButton.setVisibility(View.INVISIBLE);
+            }
+        }
+    }
+
+    /**
+     * 「戻る」ボタンが押されたときの動作.
+     * <p>
+     * <p>「戻る」ボタンが押されたときの動作を設定します
+     */
+    protected void onBackButton() {
+        finish();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        DebugLog.v("LifeCycle", getClass().getSimpleName() + ":onStart");
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        DebugLog.v("LifeCycle", getClass().getSimpleName() + ":onResume");
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        DebugLog.v("LifeCycle", getClass().getSimpleName() + ":onPause");
+    }
+
+    @Override
+    public void onRestart() {
+        super.onRestart();
+        DebugLog.v("LifeCycle", getClass().getSimpleName() + ":onRestart");
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        DebugLog.v("LifeCycle", getClass().getSimpleName() + ":onStop");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        DebugLog.v("LifeCycle", getClass().getSimpleName() + ":onDestroy");
+        for (BroadcastReceiver receiver : receivers) {
+            unregisterReceiver(receiver);
+        }
+
+        View view = this.findViewById(android.R.id.content);
+        if (view != null) {
+            Util.cleanUpImageView(view);
+        }
+
+        progresHandler = null;
+        mainHandler = null;
+    }
+
+    @Override
+    public Intent registerReceiver(BroadcastReceiver receiver, IntentFilter filter) {
+        DebugLog.d(LOG_TAG, "registerReceiver START");
+        receivers.add(receiver);
+        DebugLog.d(LOG_TAG, "registerReceiver END");
+        return super.registerReceiver(receiver, filter);
+    }
+
+    @Override
+    public void unregisterReceiver(BroadcastReceiver receiver) {
+        DebugLog.d(LOG_TAG, "unregisterReceiver START");
+        receivers.remove(receiver);
+        super.unregisterReceiver(receiver);
+        DebugLog.d(LOG_TAG, "unregisterReceiver END");
+    }
+
+    /**
+     * プログレスダイアログを表示する.
+     */
+    public void showProgressDialog() {
+//        DebugLog.d(LOG_TAG, "showProgressDialog START");
+//        if (progressDialog != null) {
+//            progressDialog.showDialog();
+//        }
+//        DebugLog.d(LOG_TAG, "showProgressDialog END");
+    }
+
+    /**
+     * プログレスダイアログを閉じる.
+     */
+    public void dismissProgressDialog() {
+//        DebugLog.d(LOG_TAG, "dismissProgressDialog START");
+//        if (progressDialog != null) {
+//            progressDialog.dismissDialog();
+//        }
+//        DebugLog.d(LOG_TAG, "dismissProgressDialog END");
+    }
+
+    /**
+     * プログレスバー用のハンドラーを返します.
+     *
+     * @return プログレスバーハンドラー
+     */
+    public Handler getProgressBarHandler() {
+        return progresHandler;
+    }
+
+    /**
+     * プログレスバー用のハンドラーを設定する。
+     *
+     * @return プログレスバーハンドラー
+     */
+    public void setProgressBarHandler(int titleRes) {
+        progresHandler = new ProgressbarHandler(this, titleRes);
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        DebugLog.d(LOG_TAG, "onBackPressed START");
+        if (toolBar != null && toolBar.getVisibility() == View.VISIBLE
+                && backButton != null && backButton.getVisibility() == View.VISIBLE) {
+            onBackButton();
+        }
+        DebugLog.d(LOG_TAG, "onBackPressed END");
+    }
+}
