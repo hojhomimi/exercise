@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/Relative"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/transparent_00000000">
+
+    <RelativeLayout
+        android:id="@+id/rl_all"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:background="@drawable/dialog_network_bg"
+        android:layout_centerInParent="true">
+
+        <RelativeLayout
+            android:id="@+id/lenear_single"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btOK_single"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_centerInParent="true"
+                android:background="@drawable/dialog_confirm_bottom_bg"
+                android:text="YES"
+                android:textColor="@drawable/press_text_color_blue_two"
+                android:textSize="@dimen/text_size_18sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/lenear"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/viewLine"
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:layout_centerInParent="true"
+                android:background="#112868e9" />
+
+            <Button
+                android:id="@+id/btOK"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignRight="@+id/viewLine"
+                android:background="@drawable/dialog_confirm_bottom_left_bg"
+                android:text="YES"
+                android:textColor="@drawable/press_text_color_blue_two"
+                android:textSize="@dimen/text_size_18sp" />
+
+            <Button
+                android:id="@+id/btCancel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignLeft="@+id/viewLine"
+                android:background="@drawable/dialog_confirm_bottom_right_bg"
+                android:text="NO"
+                android:textColor="@drawable/press_text_color_blue_two"
+                android:textSize="@dimen/text_size_18sp" />
+        </RelativeLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="50dp">
+
+            <LinearLayout
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:paddingTop="30dp"
+                android:orientation="vertical"
+                android:layout_gravity="center">
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    style="@style/AppTheme.TextSize.XLarge"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_above="@id/textview"
+                    android:gravity="center"
+                    android:text="タイトル"
+                    android:textColor="@color/dialog_textcolor_97a8b5"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/textview"
+                    style="@style/AppTheme.TextSize.Large"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="送信しました"
+                    android:textColor="@color/dialog_textcolor_97a8b5" />
+
+
+            </LinearLayout>
+        </ScrollView>
+
+
+    </RelativeLayout>
+</RelativeLayout>
