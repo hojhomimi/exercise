@@ -17,8 +17,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.panasonic.smart.eolia.R;
-
-import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
+import com.panasonic.smart.eolia.common.util.StringUtil;
 
 
 public class ConfirmDialogFragment extends DialogFragment {
@@ -34,7 +33,28 @@ public class ConfirmDialogFragment extends DialogFragment {
     String type;
     String okString;
     String cancelString;
+    Button btOK;
+    public void setTitleString(String titleString) {
+        this.titleString = titleString;
+    }
+
+    public void setButtonText(String buttonText) {
+        if (btOK != null) {
+            btOK.setText(buttonText);
+        }
+    }
+
     String contentString;
+    String titleString;
+    private int windowHeight;
+    private boolean isConfirmLeft = true;
+
+    public void setWindowHeight(int windowHeight) {
+        this.windowHeight = windowHeight;
+    }
+    public void setConfirmLeft(boolean confirmLeft) {
+        isConfirmLeft = confirmLeft;
+    }
 
     public interface OnConfirmListener {
         void onClick(Dialog dialog);
@@ -42,11 +62,11 @@ public class ConfirmDialogFragment extends DialogFragment {
         void onBack(boolean isDismiss);
     }
 
-    public static ConfirmDialogFragment newInstanceSingleButton(String confirmText, String titleContent, OnConfirmListener listener) {
+    public static ConfirmDialogFragment newInstanceSingleButton(String confirmText, String content, OnConfirmListener listener) {
         Bundle bundle = new Bundle();
         bundle.putString(ConfirmDialogFragment.KEY_TYPE, ConfirmDialogFragment.TYPE_SINGLE);
         bundle.putString(ConfirmDialogFragment.KEY_OK_STRING, confirmText);
-        bundle.putString(ConfirmDialogFragment.KEY_CONTENT_STRING, titleContent);
+        bundle.putString(ConfirmDialogFragment.KEY_CONTENT_STRING, content);
         ConfirmDialogFragment confirmDialogFragment = new ConfirmDialogFragment();
         confirmDialogFragment.setArguments(bundle);
         confirmDialogFragment.setOnDialogConfirmListener(listener);
@@ -54,12 +74,12 @@ public class ConfirmDialogFragment extends DialogFragment {
 
     }
 
-    public static ConfirmDialogFragment newInstanceDoubleButton(String confirmText, String cancelString, String titleContent, OnConfirmListener listener) {
+    public static ConfirmDialogFragment newInstanceDoubleButton(String confirmText, String cancelString, String content, OnConfirmListener listener) {
         Bundle bundle = new Bundle();
         bundle.putString(ConfirmDialogFragment.KEY_TYPE, ConfirmDialogFragment.TYPE_DOUBLE);
         bundle.putString(ConfirmDialogFragment.KEY_OK_STRING, confirmText);
         bundle.putString(ConfirmDialogFragment.KEY_CANCEL_STRING, cancelString);
-        bundle.putString(ConfirmDialogFragment.KEY_CONTENT_STRING, titleContent);
+        bundle.putString(ConfirmDialogFragment.KEY_CONTENT_STRING, content);
         ConfirmDialogFragment confirmDialogFragment = new ConfirmDialogFragment();
         confirmDialogFragment.setArguments(bundle);
         confirmDialogFragment.setOnDialogConfirmListener(listener);
@@ -78,9 +98,19 @@ public class ConfirmDialogFragment extends DialogFragment {
         //防止点击能穿透
         view.setClickable(true);
         Button btCancel = (Button) view.findViewById(R.id.btCancel);
-        Button btOK = (Button) view.findViewById(R.id.btOK);
+        btOK = (Button) view.findViewById(R.id.btOK);
         Button btOKSingle = (Button) view.findViewById(R.id.btOK_single);
         TextView textview = (TextView) view.findViewById(R.id.textview);
+        TextView tvTitle = (TextView) view.findViewById(R.id.tvTitle);
+        RelativeLayout all = (RelativeLayout) view.findViewById(R.id.rl_all);
+
+
+        ViewGroup.LayoutParams layoutParams = all.getLayoutParams();
+
+        if (windowHeight != 0) {
+            layoutParams.height = windowHeight;
+        }
+
         RelativeLayout relativesingle = (RelativeLayout) view.findViewById(R.id.lenear_single);
         RelativeLayout relative = (RelativeLayout) view.findViewById(R.id.lenear);
         Bundle bundle = getArguments();
@@ -88,6 +118,13 @@ public class ConfirmDialogFragment extends DialogFragment {
         contentString = bundle.getString(KEY_CONTENT_STRING, "");
         okString = bundle.getString(KEY_OK_STRING, "OK");
         cancelString = bundle.getString(KEY_CANCEL_STRING, "Cancel");
+
+        if (StringUtil.isNotEmpty(titleString)) {
+            tvTitle.setVisibility(View.VISIBLE);
+            tvTitle.setText(titleString);
+        } else {
+            tvTitle.setVisibility(View.GONE);
+        }
         switch (type) {
             case TYPE_SINGLE:
                 relativesingle.setVisibility(View.VISIBLE);
@@ -106,10 +143,13 @@ public class ConfirmDialogFragment extends DialogFragment {
             @Override
             public void onClick(View view) {
                 if (confirmListener != null) {
-                    confirmListener.onBack(false);
-
-                dismiss();
+                    if (isConfirmLeft) {
+                        confirmListener.onBack(false);
+                    } else {
+                        confirmListener.onClick(getDialog());
+                    }
                 }
+                dismiss();
             }
         });
         btOKSingle.setOnClickListener(new View.OnClickListener() {
@@ -117,17 +157,22 @@ public class ConfirmDialogFragment extends DialogFragment {
             public void onClick(View v) {
                 if (confirmListener != null) {
                     confirmListener.onClick(getDialog());
-                    dismiss();
+
                 }
+                dismiss();
             }
         });
         btOK.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (confirmListener != null) {
-                    confirmListener.onClick(getDialog());
-                    dismiss();
+                    if (isConfirmLeft) {
+                        confirmListener.onClick(getDialog());
+                    } else {
+                        confirmListener.onBack(false);
+                    }
                 }
+                dismiss();
 
             }
         });
@@ -159,8 +204,7 @@ public class ConfirmDialogFragment extends DialogFragment {
         super.onStart();
         Window window = getDialog().getWindow();
         WindowManager.LayoutParams windowParams = window.getAttributes();
-        windowParams.dimAmount = 0.5f;
-        windowParams.type =TYPE_TOAST;
+        windowParams.dimAmount = 0.3f;
         window.setAttributes(windowParams);
     }
 
