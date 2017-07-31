@@ -664,6 +664,110 @@ public class Util {
 
         DebugLog.d(LOG_TAG, "dialogEffect END");
     }
+      public static void showNotification(String serviceID, String applianceID, String msg, String titletext, Context context) {
+        DebugLog.d(LOG_TAG, "showNotification() serviceID=" + serviceID + ",applianceID=" + applianceID + ",msg=" + msg + ",titletext=" + titletext);
+
+        // 通知欄メッセージのタイトル
+        String title = "通知";
+        if(StringUtil.isNotEmpty(titletext)) {
+            title = titletext;
+        }
+        // 通知のＩＤを作成する「日＋時＋分＋秒」
+        Date currentDate = new Date();
+        String notifyId = String.valueOf((int)(currentDate.getTime() % 1000000));
+        DebugLog.d(LOG_TAG, "notifyId=" + notifyId);
+
+
+// CHG-ST #30718:IT1_項目外_Push通知バナーをタップした後の動作がアンドロイドとiOSで差異がある。 PSDCD徐 2017-06-27
+        Intent newIntent = new Intent(context, InitNotification.class);
+// CHG-ED #30718:IT1_項目外_Push通知バナーをタップした後の動作がアンドロイドとiOSで差異がある。 PSDCD徐 2017-06-27
+        //newIntent.setAction(ACTION_PUSH_MESSAGE_FCM);
+        // PUSH通知サービス種別
+        newIntent.putExtra(PUSH_RECEIVE_APPLIANCE_ID, applianceID);
+        // 機器ＩＤ
+        newIntent.putExtra(PUSH_RECEIVE_MESSAGE, msg);
+        // ポップアップ表示用メッセージ
+        newIntent.putExtra(PUSH_RECEIVE_SERVICE_ID, serviceID);
+
+        newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        newIntent.setFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        newIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        newIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        newIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, Integer.parseInt(notifyId), newIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification notification = null;
+/*        if (android.os.Build.VERSION.SDK_INT < 23){
+            DebugLog.d(LOG_TAG, "SDK_INT<23");
+            notification = new Notification(R.mipmap.ic_launcher, title, System.currentTimeMillis());
+            //notification.setLatestEventInfo(context, "appName", title, pendingIntent);
+        } else {
+*/
+        // 通知の作成(Heads-up通知を利用する)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
+                .setSmallIcon(R.mipmap.app_android)
+                .setContentTitle(title)
+                .setContentText(msg)
+                .setTicker(title)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setFullScreenIntent(PendingIntent.getActivity(context, 0, new Intent(), 0), true);
+
+//ADD-ST #10461:PUSH通知受信時のアイコン（Android5以上用） PSDCD徐 2017-07-25
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            //Android 5 以上
+            builder.setSmallIcon(R.mipmap.notification_icon);
+        }
+//ADD-ED #10461:PUSH通知受信時のアイコン（Android5以上用） PSDCD徐 2017-07-25
+        notification = builder.build();
+//        }
+        notification.defaults = Notification.DEFAULT_SOUND;
+        notification.flags = Notification.FLAG_AUTO_CANCEL;
+
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(
+                android.content.Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(Integer.parseInt(notifyId), notification);
+
+        KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        if (km.inKeyguardRestrictedInputMode()) {
+            DebugLog.d(LOG_TAG, "WakeLock startActivity");
+            Intent alarmIntent = new Intent(context, AlarmHandlerActivity.class);
+            alarmIntent.putExtra("title", title);
+            alarmIntent.putExtra(PUSH_RECEIVE_APPLIANCE_ID, applianceID);
+            // 機器ＩＤ
+            alarmIntent.putExtra(PUSH_RECEIVE_MESSAGE, msg);
+            // ポップアップ表示用メッセージ
+            alarmIntent.putExtra(PUSH_RECEIVE_SERVICE_ID, serviceID);
+            alarmIntent.putExtra("notifyId", notifyId);
+            alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            context.startActivity(alarmIntent);
+        } else {
+            final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            if (!pm.isScreenOn()) {
+                final PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP |
+                        PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "bright");
+                DebugLog.d(LOG_TAG, "WakeLock ScreenOn");
+                wl.acquire();
+                int result = 15000;
+                try {
+                    result  = Settings.System.getInt(context.getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT);
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+                DebugLog.i(LOG_TAG, "screen off timeout = " + result);
+
+                new Handler().postDelayed(new Runnable() {
+                    public void run() {
+                        wl.release();
+                    }
+                }, result);
+            }
+
+        }
+    }
 
 
 }
